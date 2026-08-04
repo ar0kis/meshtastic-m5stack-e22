@@ -310,6 +310,15 @@ class RadioLibInterface : public RadioInterface, protected concurrency::Notified
      */
     template <typename T> uint32_t computePacketTime(T &lora, uint32_t pl, bool received)
     {
+        // RadioLibTime_t is unsigned, while RadioLib error constants are
+        // negative. If getTimeOnAir()/calculateTimeOnAir() returns an error,
+        // the implicit conversion otherwise turns it into about 4.29e9 us.
+        // That was recorded as ~4.29e6 ms and displayed as ~7158% ChUtil.
+        constexpr RadioLibTime_t MAX_VALID_PACKET_TIME_US = 60UL * 1000UL * 1000UL;
+        auto validPacketTimeMs = [](RadioLibTime_t timeUs) -> uint32_t {
+            return (timeUs > 0 && timeUs <= MAX_VALID_PACKET_TIME_US) ? static_cast<uint32_t>(timeUs / 1000UL) : 0;
+        };
+
         if (received) {
             // First get the actual coding rate and CRC status from the received packet
             uint8_t rxCR;
@@ -329,10 +338,28 @@ class RadioLibInterface : public RadioInterface, protected concurrency::Notified
             PacketConfig_t pc = getPacketConfig();
             pc.lora.crcEnabled = hasCRC;
 
-            return lora.calculateTimeOnAir(modemType, dr, pc, pl) / 1000;
+            RadioLibTime_t timeUs = lora.calculateTimeOnAir(modemType, dr, pc, pl);
+            uint32_t timeMs = validPacketTimeMs(timeUs);
+            if (timeMs != 0)
+                return timeMs;
+
+            // A malformed RX header can contain an invalid coding rate. Fall
+            // back to the configured radio parameters instead of poisoning
+            // the one-minute channel-utilization window.
+            timeUs = lora.calculateTimeOnAir(modemType, getDataRate(), getPacketConfig(), pl);
+            return validPacketTimeMs(timeUs);
         }
 
-        return lora.getTimeOnAir(pl) / 1000;
+        RadioLibTime_t timeUs = lora.getTimeOnAir(pl);
+        uint32_t timeMs = validPacketTimeMs(timeUs);
+        if (timeMs != 0)
+            return timeMs;
+
+        // getTimeOnAir() reads the live modem type. Immediately after TX the
+        // SX1262 can transiently report an invalid modem state, so calculate
+        // from Meshtastic's cached LoRa configuration instead.
+        timeUs = lora.calculateTimeOnAir(modemType, getDataRate(), getPacketConfig(), pl);
+        return validPacketTimeMs(timeUs);
     }
 
     const char *radioLibErr = "RadioLib err=";

@@ -119,6 +119,8 @@ class Power : public concurrency::OSThread
     bool cw2015Init();
     /// Setup a 17048 battery level sensor
     bool max17048Init();
+    /// Setup the M5Stack Core Basic IP5306 coarse battery gauge
+    bool ip5306Init();
     /// Setup a Lipo charger
     bool lipoChargerInit();
     /// Setup a meshSolar battery sensor

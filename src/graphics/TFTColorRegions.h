@@ -40,7 +40,7 @@ enum class TFTColorRole : uint8_t {
     Count
 };
 
-#if HAS_TFT || defined(HAS_SPI_TFT) || defined(HAS_HUB75_NATIVE)
+#if (HAS_TFT || defined(HAS_SPI_TFT) || defined(HAS_HUB75_NATIVE)) && !defined(MESHTASTIC_EXCLUDE_TFT_COLORING)
 #define GRAPHICS_TFT_COLORING_ENABLED 1
 #else
 #define GRAPHICS_TFT_COLORING_ENABLED 0

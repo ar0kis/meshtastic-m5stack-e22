@@ -306,6 +306,90 @@ using namespace meshtastic;
  */
 static HasBatteryLevel *batteryLevel; // Default to NULL for no battery level sensor
 
+#ifdef M5STACK_IP5306
+/**
+ * M5Stack Core Basic IP5306 power controller.
+ *
+ * IP5306 does not provide battery voltage. Its READ3 register exposes the
+ * same four LED gauge states used by the original M5Stack firmware, so the
+ * reported percentage is intentionally coarse: 25/50/75/100%.
+ */
+class IP5306BatteryLevel : public HasBatteryLevel
+{
+  private:
+    static constexpr uint8_t address = 0x75;
+
+    bool readRegister(uint8_t reg, uint8_t &value)
+    {
+        Wire.beginTransmission(address);
+        Wire.write(reg);
+        if (Wire.endTransmission(false) != 0)
+            return false;
+        if (Wire.requestFrom(address, static_cast<uint8_t>(1)) != 1)
+            return false;
+        value = Wire.read();
+        return true;
+    }
+
+  public:
+    bool begin()
+    {
+        uint8_t value = 0;
+        return readRegister(0x78, value);
+    }
+
+    virtual int getBatteryPercent() override
+    {
+        uint8_t value = 0;
+        if (!readRegister(0x78, value))
+            return -1;
+
+        // Bits accumulate as the battery empties: 0, 1, 3, 7.
+        switch (value & 0xF0) {
+        case 0x00:
+            return 100;
+        case 0x80:
+            return 75;
+        case 0xC0:
+            return 50;
+        case 0xE0:
+            return 25;
+        default:
+            return 0;
+        }
+    }
+
+    virtual uint16_t getBattVoltage() override
+    {
+        // A safe representative voltage is required by the common power
+        // status API; IP5306 itself has no voltage ADC register.
+        int percent = getBatteryPercent();
+        if (percent >= 100)
+            return 4150;
+        if (percent >= 75)
+            return 3950;
+        if (percent >= 50)
+            return 3750;
+        if (percent >= 25)
+            return 3500;
+        return 3200;
+    }
+
+    virtual bool isBatteryConnect() override { return begin(); }
+
+    virtual bool isCharging() override
+    {
+        uint8_t value = 0;
+        return readRegister(0x70, value) && (value & (1U << 3));
+    }
+
+    // IP5306 has no reliable VBUS-present status distinct from charging.
+    virtual bool isVbusIn() override { return isCharging(); }
+};
+
+static IP5306BatteryLevel ip5306Level;
+#endif
+
 #ifdef BATTERY_PIN
 
 void battery_adcEnable()
@@ -802,7 +886,9 @@ bool Power::setup()
     initSGM41562(SGM41562_WIRE);
 #endif
     bool found = false;
-    if (axpChipInit()) {
+    if (ip5306Init()) {
+        found = true;
+    } else if (axpChipInit()) {
         found = true;
     } else if (cw2015Init()) {
         found = true;
@@ -833,6 +919,19 @@ bool Power::setup()
 #endif
 
     return found;
+}
+
+bool Power::ip5306Init()
+{
+#ifdef M5STACK_IP5306
+    bool result = ip5306Level.begin();
+    LOG_INFO("Power::IP5306 battery gauge %s", result ? "detected" : "not found");
+    if (result)
+        batteryLevel = &ip5306Level;
+    return result;
+#else
+    return false;
+#endif
 }
 
 void Power::powerCommandsCheck()

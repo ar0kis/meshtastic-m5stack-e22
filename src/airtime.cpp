@@ -11,6 +11,12 @@ uint32_t air_period_rx[PERIODS_TO_LOG];
 
 void AirTime::logAirtime(reportTypes reportType, uint32_t airtime_ms)
 {
+    // No Meshtastic LoRa packet can occupy the channel for more than a minute.
+    // Reject driver error values before they corrupt utilization and suppress
+    // subsequent transmissions for the entire rolling window.
+    if (airtime_ms == 0 || airtime_ms > 60UL * 1000UL) {
+        return;
+    }
 
     if (reportType == TX_LOG) {
         LOG_DEBUG("Packet TX: %ums", airtime_ms);

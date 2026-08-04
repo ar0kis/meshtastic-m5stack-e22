@@ -104,6 +104,9 @@ void drawRoundedHighlight(OLEDDisplay *display, int16_t x, int16_t y, int16_t w,
 void drawCommonHeader(OLEDDisplay *display, int16_t x, int16_t y, const char *titleStr, bool force_no_invert, bool show_date,
                       bool transparent_background, bool use_title_color_override, uint16_t title_color_override)
 {
+#ifdef MESHTASTIC_EXCLUDE_COMMON_HEADER
+    return;
+#endif
     constexpr int HEADER_OFFSET_Y = 1;
     y += HEADER_OFFSET_Y;
 
