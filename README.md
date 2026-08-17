@@ -34,6 +34,10 @@ Meshtastic enables text messaging, location sharing, and telemetry over a decent
 
 Join our community and help improve Meshtastic! 🚀
 
+## Custom MeshCore firmware
+
+Готовые прошивки MeshCore для M5Stack Core + E22-900M30S и ESP32-C3 Super Mini + E22, схемы подключения и инструкция по сборке находятся в каталоге [`meshcore-custom`](meshcore-custom/README.md).
+
 ## Stats
 
 ![Alt](https://repobeats.axiom.co/api/embed/8025e56c482ec63541593cc5bd322c19d5c0bdcf.svg "Repobeats analytics image")
