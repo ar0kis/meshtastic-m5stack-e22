@@ -1,0 +1,46 @@
+#include "target.h"
+#include <Arduino.h>
+
+XiaoC3Board board;
+
+#if defined(P_LORA_SCLK)
+// ESP32-C3 exposes its general-purpose SPI peripheral as FSPI.  The
+// SPIClass default is HSPI, which is not available on the C3 and silently
+// leaves the radio reading zeroes.
+static SPIClass spi(FSPI);
+RADIO_CLASS radio = new Module(P_LORA_NSS, P_LORA_DIO_1, P_LORA_RESET, P_LORA_BUSY, spi);
+#else
+RADIO_CLASS radio = new Module(P_LORA_NSS, P_LORA_DIO_1, P_LORA_RESET, P_LORA_BUSY);
+#endif
+
+WRAPPER_CLASS radio_driver(radio, board);
+
+ESP32RTCClock fallback_clock;
+AutoDiscoverRTCClock rtc_clock(fallback_clock);
+
+#if ENV_INCLUDE_GPS
+#include <helpers/sensors/MicroNMEALocationProvider.h>
+MicroNMEALocationProvider nmea = MicroNMEALocationProvider(Serial1);
+EnvironmentSensorManager sensors = EnvironmentSensorManager(nmea);
+#else
+EnvironmentSensorManager sensors;
+#endif
+
+bool radio_init()
+{
+    fallback_clock.begin();
+    rtc_clock.begin(Wire);
+
+#if defined(P_LORA_SCLK)
+    spi.begin(P_LORA_SCLK, P_LORA_MISO, P_LORA_MOSI);
+    return radio.std_init(&spi);
+#else
+    return radio.std_init();
+#endif
+}
+
+mesh::LocalIdentity radio_new_identity()
+{
+    RadioNoiseListener rng(radio);
+    return mesh::LocalIdentity(&rng); // create new random identity
+}
