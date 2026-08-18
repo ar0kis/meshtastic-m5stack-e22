@@ -8,7 +8,7 @@ WRAPPER_CLASS radio_driver(radio, board);
 
 ESP32RTCClock fallback_clock;
 AutoDiscoverRTCClock rtc_clock(fallback_clock);
-SensorManager sensors;
+M5Env2SensorManager sensors;
 
 #ifdef DISPLAY_CLASS
 DISPLAY_CLASS display;

@@ -9,14 +9,13 @@ constexpr uint16_t rgb565(uint8_t red, uint8_t green, uint8_t blue)
     return ((red & 0xF8) << 8) | ((green & 0xFC) << 3) | (blue >> 3);
 }
 
-// Minimal high-contrast palette: neutral UI with colour used only for state.
-constexpr uint16_t kBackground = rgb565(0, 0, 0);   // black
-constexpr uint16_t kText = rgb565(242, 242, 242);   // soft white
-constexpr uint16_t kPanel = rgb565(28, 28, 28);     // graphite
-constexpr uint16_t kAccent = rgb565(190, 190, 190); // light grey
-constexpr uint16_t kSuccess = rgb565(90, 170, 112); // status green
-constexpr uint16_t kWarning = rgb565(210, 176, 92); // warning amber
-constexpr uint16_t kError = rgb565(196, 82, 82);    // error red
+constexpr uint16_t kBackground = rgb565(10, 15, 21);
+constexpr uint16_t kText = rgb565(226, 232, 238);
+constexpr uint16_t kPanel = rgb565(24, 34, 44);
+constexpr uint16_t kAccent = rgb565(126, 151, 165);
+constexpr uint16_t kSuccess = rgb565(83, 171, 151);
+constexpr uint16_t kWarning = rgb565(190, 154, 91);
+constexpr uint16_t kError = rgb565(194, 91, 98);
 
 void initM5StackPanel(Adafruit_ILI9341 &display)
 {
@@ -46,6 +45,7 @@ void initM5StackPanel(Adafruit_ILI9341 &display)
     display.sendCommand(ILI9341_SLPOUT);
     delay(120);
     display.sendCommand(ILI9341_DISPON);
+    display.sendCommand(ILI9341_INVON);
 
     // Keep Adafruit_GFX's logical dimensions at 320x240, then replace the
     // generic rotation-1 MADCTL with M5Stack's native landscape mapping.
@@ -137,7 +137,9 @@ int M5StackILI9341Display::fontHeight()
 void M5StackILI9341Display::applyFont(int sz)
 {
     if (sz >= 2) {
-        unicode.setFont(u8g2_font_unifont_t_cyrillic);
+        unicode.setFont(u8g2_font_10x20_t_cyrillic);
+    } else if (sz == 1) {
+        unicode.setFont(u8g2_font_6x13_t_cyrillic);
     } else {
         unicode.setFont(u8g2_font_5x7_t_cyrillic);
     }

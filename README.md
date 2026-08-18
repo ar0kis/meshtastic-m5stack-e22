@@ -42,11 +42,11 @@ Join our community and help improve Meshtastic! 🚀
 
 ### Варианты устройств
 
-| Плата               | Роль прошивки                 | Файл                                                                                                                                                          |
-| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M5Stack Core ESP32  | BLE-компаньон с кириллицей    | [`meshcore_m5stack_core_e22_companion_ble_rus_tjm_tx22_merged.bin`](meshcore-custom/firmware/meshcore_m5stack_core_e22_companion_ble_rus_tjm_tx22_merged.bin) |
-| M5Stack Core ESP32  | Наблюдатель с MQTT и дисплеем | [`meshcore_m5stack_core_e22_observer_mqtt_tjm_tx22_merged.bin`](meshcore-custom/firmware/meshcore_m5stack_core_e22_observer_mqtt_tjm_tx22_merged.bin)         |
-| ESP32-C3 Super Mini | Репитер                       | [`meshcore_esp32c3_supermini_e22_repeater_tjm_tx22_merged.bin`](meshcore-custom/firmware/meshcore_esp32c3_supermini_e22_repeater_tjm_tx22_merged.bin)         |
+| Плата               | Роль прошивки                          | Файл                                                                                                                                                          |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M5Stack Core ESP32  | BLE-компаньон с кириллицей             | [`meshcore_m5stack_core_e22_companion_ble_rus_tjm_tx22_merged.bin`](meshcore-custom/firmware/meshcore_m5stack_core_e22_companion_ble_rus_tjm_tx22_merged.bin) |
+| M5Stack Core ESP32  | Наблюдатель MQTT, ENV II, погодный бот | [`meshcore_m5stack_core_e22_observer_mqtt_tjm_tx22_merged.bin`](meshcore-custom/firmware/meshcore_m5stack_core_e22_observer_mqtt_tjm_tx22_merged.bin)         |
+| ESP32-C3 Super Mini | Репитер                                | [`meshcore_esp32c3_supermini_e22_repeater_tjm_tx22_merged.bin`](meshcore-custom/firmware/meshcore_esp32c3_supermini_e22_repeater_tjm_tx22_merged.bin)         |
 
 Все три прошивки используют один радиопрофиль: `869.05 MHz`, `BW 62.5 kHz`,
 `SF7`, `CR 4/7`, мощность SX1262 `22` и TCXO `1.8 V`. Перед использованием
@@ -84,6 +84,31 @@ Join our community and help improve Meshtastic! 🚀
 
 Контакт E22 pin 8 (`DIO2`) не подключается. GPIO логики работают с уровнем
 `3.3 V`, преобразователь уровней для SPI не требуется.
+
+### Подключение M5Stack ENV II к наблюдателю
+
+ENV II подключается штатным Grove-кабелем в разъём M5Stack `Port A (I2C)`.
+
+| Цвет провода | M5Stack | ENV II | Назначение |
+| ------------ | ------- | ------ | ---------- |
+| чёрный       | GND     | GND    | земля      |
+| красный      | 5 V     | 5V     | питание    |
+| жёлтый       | GPIO21  | SDA    | данные I2C |
+| белый        | GPIO22  | SCL    | такт I2C   |
+
+Подключайте датчик при выключенном питании и затем перезагрузите наблюдатель.
+Прошивка автоматически ищет SHT30 по адресу `0x44` и BMP280 по адресу `0x76`.
+На экране отображаются температура, влажность, давление, точка росы и расчётная
+барометрическая высота. Эти же исходные показания доступны по удалённому запросу
+телеметрии MeshCore; MQTT status содержит объект `environment`.
+
+### Погодный бот наблюдателя
+
+В стандартном групповом канале MeshCore `Public` отправьте отдельное сообщение
+`/погода` или `/weather`. Наблюдатель ответит в тот же канал температурой,
+влажностью, давлением и точкой росы. К показаниям добавляются дата и время
+компаньона, переведённые в часовой пояс Тюмени (`UTC+5`). Между ответами действует
+защитный интервал 30 секунд.
 
 ### Подключение ESP32-C3 Super Mini к E22-900M30S
 

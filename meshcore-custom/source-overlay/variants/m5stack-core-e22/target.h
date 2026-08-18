@@ -1,10 +1,10 @@
 #pragma once
 
 #define RADIOLIB_STATIC_ONLY 1
+#include "M5Env2SensorManager.h"
 #include "M5StackE22Board.h"
 #include <RadioLib.h>
 #include <helpers/AutoDiscoverRTCClock.h>
-#include <helpers/SensorManager.h>
 #include <helpers/radiolib/CustomSX1262Wrapper.h>
 #include <helpers/radiolib/RadioLibWrappers.h>
 
@@ -16,7 +16,7 @@
 extern M5StackE22Board board;
 extern WRAPPER_CLASS radio_driver;
 extern AutoDiscoverRTCClock rtc_clock;
-extern SensorManager sensors;
+extern M5Env2SensorManager sensors;
 
 #ifdef DISPLAY_CLASS
 extern DISPLAY_CLASS display;
