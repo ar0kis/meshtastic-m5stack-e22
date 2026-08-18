@@ -34,6 +34,23 @@ Meshtastic enables text messaging, location sharing, and telemetry over a decent
 
 Join our community and help improve Meshtastic! 🚀
 
+## Heltec V4: MeshCore Companion + Meshtastic
+
+В каталоге [`heltec-v4-dualboot`](heltec-v4-dualboot/README.md) находится готовая
+двойная прошивка для Heltec WiFi LoRa 32 V4 с flash-памятью `16 MB`:
+
+- MeshCore BLE Companion `v1.15.0`;
+- Meshtastic `2.7.23.04b1412` с русским OLED-шрифтом;
+- загрузчик, позволяющий выбрать систему кнопкой `PRG/BOOT` при включении.
+
+[Скачать готовый BIN](heltec-v4-dualboot/firmware/firmware-merged-heltec_v4-rus-meshtastic2.7.23-meshcore1.15.0.bin)
+или [ZIP-архив](heltec-v4-dualboot/firmware/firmware_merged_heltec_v4_rus_meshtastic2_7_23_meshcore1_15_0.zip).
+
+Обе системы хранятся в памяти одновременно, но запускаются по очереди. OTA в этой
+разметке использовать нельзя; обновление выполняется полным образом через USB с
+адреса `0x0`. Подробные инструкции по переключению, прошивке и восстановлению
+режима загрузчика приведены в [русском README](heltec-v4-dualboot/README.md).
+
 ## Custom MeshCore firmware
 
 Ниже приведена русская инструкция по сборке и прошивке устройств MeshCore на
