@@ -34,6 +34,14 @@ Meshtastic enables text messaging, location sharing, and telemetry over a decent
 
 Join our community and help improve Meshtastic! 🚀
 
+## ESP32-C3 Super Mini + E22-900M22S
+
+Для рабочей сборки репитера `SNode_rep` создан отдельный комплект: готовая
+прошивка MeshCore 1.17.1, исходный overlay, фотографии монтажа и подробная
+инструкция на русском языке.
+
+**[Открыть инструкцию по сборке и установке](esp32-c3-supermini-e22-900m22s/README.md)**
+
 ## Custom MeshCore firmware
 
 Ниже приведена русская инструкция по сборке и прошивке устройств MeshCore на
