@@ -1,0 +1,13 @@
+MeshCore v1.18.0 source change required for ESP32-C3 Super Mini:
+
+File: variants/xiao_c3/target.cpp
+
+Replace:
+
+  static SPIClass spi;
+
+with:
+
+  static SPIClass spi(FSPI);
+
+This selects the ESP32-C3 FSPI controller explicitly. The complete board configuration is in platformio.ini beside this file.
