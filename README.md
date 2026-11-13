@@ -76,6 +76,80 @@ get mqtt3.diag
 
 ---
 
+## 🇷🇺 ESP32-C3 Super Mini + E22-900M22S: распиновка, сборка и прошивка
+
+Ниже приведены действия именно для платформы **ESP32-C3 Super Mini** и радиомодуля **Ebyte E22-900M22S (SX1262)**. Не путайте его с **E22-900MM22S**: физическая нумерация контактов отличается. Полная таблица подключения и настройки платы — в [README варианта](./variants/supermini_c3_e22_m22s/README.md).
+
+### Как изменить GPIO подключения E22
+
+Откройте [`variants/supermini_c3_e22_m22s/platformio.ini`](./variants/supermini_c3_e22_m22s/platformio.ini). В секции `[SuperMini_C3_E22_M22S]` определены соответствия ESP32-C3 ↔ E22:
+
+| Определение | По умолчанию (GPIO ESP32-C3) | Сигнал E22 |
+|---|---:|---|
+| `P_LORA_SCLK` | 0 | SCK |
+| `P_LORA_MISO` | 3 | MISO |
+| `P_LORA_MOSI` | 2 | MOSI |
+| `P_LORA_NSS` | 1 | NSS / CS |
+| `P_LORA_BUSY` | 4 | BUSY |
+| `P_LORA_DIO_1` | 21 | DIO1 |
+| `P_LORA_RESET` | 10 | NRST |
+| `SX126X_RXEN` | 6 | RXEN |
+| `SX126X_TXEN` | 7 | TXEN |
+
+Пример: если физически перенесли провод **NSS на GPIO5**, замените строку `-D P_LORA_NSS=1` на `-D P_LORA_NSS=5`. Аналогично измените определения других перемещённых проводов. **GPIO в прошивке должны совпадать с реальным подключением.** Контакты питания `3V3` и `GND` не настраиваются программно; не подключайте входы E22 к 5 В. `RXEN` и `TXEN` в этом варианте управляются независимо, их нельзя объединять.
+
+Распиновка задаётся через `build_flags`; `target.cpp` использует эти определения при инициализации SPI и SX1262, поэтому **менять `target.cpp` для обычной перестановки GPIO не нужно**. Следите за ограничениями ESP32-C3 (загрузочные strapping-пины, USB и доступность GPIO). Проверочный скрипт `scripts/check_supermini_c3_e22_m22s_observer.py` содержит **исходные значения** GPIO: после их изменения он будет требовать синхронного обновления проверок, иначе сообщит об ошибке даже при корректной сборке.
+
+### Компиляция через PlatformIO (macOS / Linux / Windows)
+
+Установите [VS Code](https://code.visualstudio.com/) с расширением **PlatformIO IDE**, либо [PlatformIO Core](https://docs.platformio.org/en/latest/core/installation/index.html) для командной строки. Затем откройте терминал **из корня этого репозитория**:
+
+```bash
+git clone --branch esp32-c3-e22-m22s-repeater-observer --single-branch https://github.com/ar0kis/meshtastic-m5stack-e22.git
+cd meshtastic-m5stack-e22
+pio run -e supermini_c3_e22_m22s_repeater_observer_mqtt
+```
+
+В VS Code можно открыть каталог проекта, выбрать environment `supermini_c3_e22_m22s_repeater_observer_mqtt` и выполнить **Build**. Для получения полного объединённого образа (включая загрузчик и таблицу разделов):
+
+```bash
+pio run -e supermini_c3_e22_m22s_repeater_observer_mqtt -t mergebin
+```
+
+Результаты находятся в каталоге:
+
+```text
+.pio/build/supermini_c3_e22_m22s_repeater_observer_mqtt/firmware.bin
+.pio/build/supermini_c3_e22_m22s_repeater_observer_mqtt/firmware-merged.bin
+```
+
+`firmware.bin` — образ приложения для обновления существующего устройства; `firmware-merged.bin` — полный образ для записи с адреса `0x0`. Параметры радиосети (869.050 МГц, BW 62.5, SF8, CR7, TX 22 dBm) по умолчанию также заданы в этом `platformio.ini`, а не в MQTT-настройках.
+
+### Как прошить ESP32-C3
+
+**Перед прошивкой обязательно сохраните идентичность узла и настройки.** В USB-консоли [MeshCore Config](https://config.meshcore.io/) получите `get prv.key`, сохраните приватный ключ **только локально и конфиденциально**, запишите полный Node ID, имя и радиопараметры. Не публикуйте приватный ключ и пароли. При полной очистке flash идентичность и пользовательские настройки могут быть потеряны.
+
+**Вариант A — обновить только приложение, сохранив существующие разделы и настройки** (если текущая таблица разделов совместима с этой сборкой):
+
+```bash
+pio run -e supermini_c3_e22_m22s_repeater_observer_mqtt -t upload --upload-port /dev/cu.usbmodemXXXX
+```
+
+Замените порт на свой. На macOS его можно найти командой `ls /dev/cu.*` (на Linux часто `/dev/ttyACM0`, в Windows `COMx`). PlatformIO загружает приложение через встроенный ESP32-C3 загрузчик. Не используйте этот вариант при несовместимой разметке flash.
+
+**Вариант B — полный образ, в том числе для чистой установки** (может перезаписать разделы и конфигурацию):
+
+```bash
+python3 -m pip install esptool
+python3 -m esptool --chip esp32c3 --port /dev/cu.usbmodemXXXX --baud 460800 write-flash 0x0 .pio/build/supermini_c3_e22_m22s_repeater_observer_mqtt/firmware-merged.bin
+```
+
+При необходимости переведите ESP32-C3 в режим загрузчика: удерживайте **BOOT**, нажмите **RESET**, отпустите **BOOT**; конкретные кнопки зависят от платы. При проблемах соединения уменьшите `--baud` до `115200`. **Не выполняйте `erase-flash` без резервной копии.**
+
+После записи откройте USB-консоль, проверьте `get name`, `get radio`, `get repeat`, `get mqtt.status`. Если ключ был сброшен, восстановите его **через физическое USB-подключение** командой `set prv.key <ВАШ_64-СИМВОЛЬНЫЙ_HEX_КЛЮЧ>`, затем `reboot` и сравните полный Node ID с сохранённым. Заново задайте Wi-Fi/MQTT при необходимости (см. инструкцию MeshCoreTel выше). Для проверки радиосвязи используйте `stats`, `advert`, повторно `stats`.
+
+---
+
 ## ⚡ Key Features
 
 * Multi-Hop Packet Routing
