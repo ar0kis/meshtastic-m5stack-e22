@@ -34,4 +34,3 @@ Before flashing, save both the private key and a full flash backup locally.
 After flashing, restore the private key and name, then verify boot, SX1262,
 radio parameters, LoRa transmit/receive counters, MQTT configuration surface,
 NTP clock, and identity persistence after reboot.
-
