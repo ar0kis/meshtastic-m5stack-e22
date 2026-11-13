@@ -12,6 +12,70 @@ MeshCore provides the ability to create wireless mesh networks, similar to Mesht
 > [MQTT Implementation Guide](./MQTT_IMPLEMENTATION.md) for configuration, CLI commands, and
 > troubleshooting.
 
+## 🇷🇺 Подключение ESP32-C3 + E22-900M22S Observer к MeshCoreTel
+
+Эта инструкция предназначена для устройства с **Observer MQTT firmware** из данной ветки. Настройка выполняется через USB-консоль в [MeshCore Config](https://config.meshcore.io/) без повторной прошивки. Подробное описание всех команд см. в [MQTT_IMPLEMENTATION.md](./MQTT_IMPLEMENTATION.md).
+
+### 1. Wi-Fi и регион
+
+Подключите ESP32-C3 по USB, откройте консоль и отправляйте **каждую команду отдельно**, заменив имя сети и пароль своими значениями (без кавычек):
+
+```text
+set wifi.ssid YourWiFiNetwork
+set wifi.pwd YourWiFiPassword
+set mqtt.iata TJM
+```
+
+`TJM` — пример IATA-кода для Тюмени; для другого региона укажите подходящий трёхбуквенный код.
+
+### 2. Добавление MQTT-брокера MeshCoreTel
+
+В примере используется **слот 3**; прошивка поддерживает слоты `mqtt1`–`mqtt6`. Не перезаписывайте занятый слот без необходимости.
+
+```text
+set mqtt3.preset custom
+set mqtt3.server mqtt.meshcoretel.ru
+set mqtt3.port 1883
+set mqtt3.username meshcore
+set mqtt3.password meshcore
+set mqtt.rx on
+set mqtt.packets on
+reboot
+```
+
+Это пример параметров публичного брокера, опубликованных на [MeshCoreTel](https://meshcoretel.ru/ru#observer-setup): MQTT/TCP, порт 1883, без TLS. Не публикуйте собственные пароли Wi-Fi или индивидуальные секреты в логах и issue.
+
+### 3. Проверка
+
+После перезагрузки выполните:
+
+```text
+get link.status
+get mqtt.status
+get mqtt3.diag
+get mqtt3.topic
+get mqtt.stats
+```
+
+При успешном подключении `get mqtt.status` содержит запись вида `3: custom (ok)`, а `get mqtt3.diag` — `mqtt3: ok, no errors`. Это **подтверждает подключение к брокеру, но не доказывает получение пакетов или появление устройства на сайте**. Для проверки публикаций дождитесь приёма LoRa-пакетов и проверьте счётчики/логи и отображение в MeshCoreTel. Стандартный шаблон топика custom-слота — `meshcore/{iata}/{device}/{type}`; если сервис требует другой формат, проверьте `get mqtt3.topic` и документацию сервиса, прежде чем менять его.
+
+### 4. Если `mqtt3: inactive, no error info`
+
+У ESP32-C3 без PSRAM есть ограничение ресурсов: прошивка допускает не более **двух TLS-слотов** (`wss://`, `mqtts://`). По умолчанию они могут быть заняты `analyzer-us` и `analyzer-eu`. При этом параметры `mqtt3` сохраняются, но слот может оставаться неактивным.
+
+Если оба TLS-слота активны, освободите **один** из них (например, `analyzer-us`):
+
+```text
+set mqtt1.preset none
+reboot
+get mqtt.status
+get mqtt3.diag
+```
+
+Либо вместо первого отключите второй: `set mqtt2.preset none`. **Не отключайте оба без необходимости.** Ожидаемое состояние — один оставшийся Analyzer `(ok)` и `3: custom (ok)`. Изменение MQTT-слотов отключает передачу в соответствующий брокер, **но не отключает радиоретрансляцию MeshCore**. Если слот всё ещё не работает, проверьте `get mqtt.config.valid`, `get bridge.enabled` и `memory`.
+
+---
+
 ## ⚡ Key Features
 
 * Multi-Hop Packet Routing
