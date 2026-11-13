@@ -1,39 +1,109 @@
-<div align="center" markdown="1">
+# MeshCore Repeater: ESP32-C3 Super Mini + E22-900M22S
 
-<img src=".github/meshtastic_logo.png" alt="Meshtastic Logo" width="80"/>
-<h1>Meshtastic Firmware</h1>
+Готовая проверенная прошивка **MeshCore Repeater v1.18.0** для ESP32-C3 Super Mini и радиомодуля **EBYTE E22-900M22S (SX1262, 22 dBm)**.
 
-![GitHub release downloads](https://img.shields.io/github/downloads/meshtastic/firmware/total)
-[![CI](https://img.shields.io/github/actions/workflow/status/meshtastic/firmware/main_matrix.yml?branch=master&label=actions&logo=github&color=yellow)](https://github.com/meshtastic/firmware/actions/workflows/ci.yml)
-[![CLA assistant](https://cla-assistant.io/readme/badge/meshtastic/firmware)](https://cla-assistant.io/meshtastic/firmware)
-[![Fiscal Contributors](https://opencollective.com/meshtastic/tiers/badge.svg?label=Fiscal%20Contributors&color=deeppink)](https://opencollective.com/meshtastic/)
-[![Vercel](https://img.shields.io/static/v1?label=Powered%20by&message=Vercel&style=flat&logo=vercel&color=000000)](https://vercel.com?utm_source=meshtastic&utm_campaign=oss)
+> Важно: это вариант именно для **E22-900M22S** размером 20 × 14 мм. Он не предназначен для E22-900MM22S с другой распиновкой или E220-900M22S на LLCC68.
 
-<a href="https://trendshift.io/repositories/5524" target="_blank"><img src="https://trendshift.io/api/badge/repositories/5524" alt="meshtastic%2Ffirmware | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+## Схема подключения
 
-</div>
+| ESP32-C3 Super Mini | E22-900M22S | Контакт E22 | Направление |
+|---|---|---:|---|
+| GPIO0 | SCK | 18 | ESP → E22 |
+| GPIO3 | MISO | 16 | ESP ← E22 |
+| GPIO2 | MOSI | 17 | ESP → E22 |
+| GPIO1 | NSS | 19 | ESP → E22 |
+| GPIO4 | BUSY | 14 | ESP ← E22 |
+| GPIO21 | DIO1 | 13 | ESP ← E22 |
+| GPIO10 | NRST | 15 | ESP → E22 |
+| GPIO6 | RXEN | 6 | ESP → E22 |
+| GPIO7 | TXEN | 7 | ESP → E22 |
+| 3V3 | VCC | 9 | питание |
+| GND | GND | 1–5, 10–12, 20 | земля |
 
-</div>
+```text
+ESP32-C3 Super Mini                       E22-900M22S
 
-<div align="center">
-	<a href="https://meshtastic.org">Website</a>
-	-
-	<a href="https://meshtastic.org/docs/">Documentation</a>
-</div>
+3V3  ---------------------------------->  VCC   pin 9
+GND  ---------------------------------->  GND   pins 1-5, 10-12, 20
 
-## Overview
+GPIO0  -------------------------------->  SCK   pin 18
+GPIO3  <--------------------------------  MISO  pin 16
+GPIO2  -------------------------------->  MOSI  pin 17
+GPIO1  -------------------------------->  NSS   pin 19
+GPIO4  <--------------------------------  BUSY  pin 14
+GPIO21 <--------------------------------  DIO1  pin 13
+GPIO10 -------------------------------->  NRST  pin 15
+GPIO6  -------------------------------->  RXEN  pin 6
+GPIO7  -------------------------------->  TXEN  pin 7
+```
 
-This repository contains the official device firmware for Meshtastic, an open-source LoRa mesh networking project designed for long-range, low-power communication without relying on internet or cellular infrastructure. The firmware supports various hardware platforms, including ESP32, nRF52, RP2040/RP2350, and Linux-based devices.
+DIO2 не подключается: RXEN и TXEN управляются отдельными GPIO. TCXO радиомодуля управляется через DIO3 с напряжением 1,8 В — это учтено в прошивке.
 
-Meshtastic enables text messaging, location sharing, and telemetry over a decentralized mesh network, making it ideal for outdoor adventures, emergency preparedness, and remote operations.
+## Радиопрофиль
 
-### Get Started
+| Параметр | Значение |
+|---|---|
+| Частота | 869,050 МГц |
+| Полоса | 62,5 кГц |
+| Spreading Factor | SF8 |
+| Coding Rate | CR7 |
+| Мощность | 22 dBm |
+| Имя репитера | `E22REP` |
+| Начальный пароль администратора | `password` |
 
-- 🔧 **[Building Instructions](https://meshtastic.org/docs/development/firmware/build)** - Learn how to compile the firmware from source.
-- ⚡ **[Flashing Instructions](https://meshtastic.org/docs/getting-started/flashing-firmware/)** - Install or update the firmware on your device.
+После первого запуска смените стандартный пароль.
 
-Join our community and help improve Meshtastic! 🚀
+## Питание и монтаж
 
-## Stats
+- Питание радиомодуля: только 3,3 В.
+- Источник должен уверенно отдавать не менее 200 мА.
+- Возле VCC установите конденсаторы 100 нФ и 47–100 мкФ.
+- SPI-провода желательно делать короче 10 см.
+- Не включайте передачу без антенны диапазона 868/915 МГц.
 
-![Alt](https://repobeats.axiom.co/api/embed/8025e56c482ec63541593cc5bd322c19d5c0bdcf.svg "Repobeats analytics image")
+## Файлы
+
+- [Полная инструкция и исходная конфигурация](meshcore-esp32c3-e22-900m22s/)
+- [PlatformIO-конфигурация](meshcore-esp32c3-e22-900m22s/platformio.ini)
+- [Готовая прошивка и скрипт сборки](meshcore-esp32c3-e22-900m22s/firmware/)
+- [Изменение FSPI для MeshCore](meshcore-esp32c3-e22-900m22s/target-cpp-change.txt)
+
+## Подготовка готового бинарника
+
+Перейдите в каталог с прошивкой и объедините три части:
+
+```bash
+cd meshcore-esp32c3-e22-900m22s/firmware
+python3 assemble_firmware.py
+```
+
+Скрипт создаст файл:
+
+```text
+meshcore_esp32c3_e22-900m22s_repeater_v1.18.0_merged.bin
+```
+
+и проверит его SHA-256:
+
+```text
+89a147090a6c334ac8b641944f1c5a93869d69fbc8cd0f9bf878365289cec398
+```
+
+## Прошивка ESP32-C3
+
+```bash
+esptool --chip esp32c3 --port PORT write-flash 0x0 meshcore_esp32c3_e22-900m22s_repeater_v1.18.0_merged.bin
+```
+
+После загрузки откройте последовательный порт на скорости 115200 бод. Исправный запуск содержит обнаружение SX126x и `device_errors=0x0000`.
+
+Полезные команды: `get radio`, `get name`, `clock`, `stats-radio`, `stats-packets`, `advert`.
+
+## Сборка из исходников MeshCore
+
+База: MeshCore v1.18.0, commit `81dbae592ffad40b4212bc0b37e82b38da08f4bc`.
+
+```bash
+pio run -e supermini_c3_e22_m22s_repeater
+pio run -e supermini_c3_e22_m22s_repeater -t mergebin
+```
